@@ -1,6 +1,6 @@
 -- This intentionally only uses std, not mathlib
 import Std.Data.Array.Lemmas
-import Std
+import Std.Tactic.Congr
 
 set_option autoImplicit false
 
