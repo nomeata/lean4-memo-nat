@@ -35,9 +35,6 @@ protected def memoVec {α} (cap : Nat) (f : (n : Nat) → (∀ i, i < n → α) 
 def memo {α : Type} (f : (n : Nat) → (∀ i, i < n → α) → α) (n : Nat) : α :=
   (NatMemo.memoVec (n + 1) f (n + 1)).get ⟨n, Nat.le_refl _⟩
 
-def fix {α} (f : (n : Nat) → (∀ i, i < n → α) → α) (n : Nat) : α :=
-  f n (fun i _ => fix f i)
-
 theorem memoVec_spec {α}
   (g : Nat → α)
   (f : (n : Nat) → (∀ i, i < n → α) → α)
