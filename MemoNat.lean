@@ -19,21 +19,21 @@ protected theorem get_push {α n} (a : SArray α n) (x : α) (i : Nat) (hi : i <
     (a.push x).get (⟨i, hi⟩) = if h : i < n then a.get ⟨i, h⟩ else x := by
   simp only [SArray.get, SArray.push, Array.get_eq_getElem, Array.get_push, a.2]
 
-protected def empty {α}: SArray α 0 := ⟨Array.empty, rfl⟩
+protected def empty {α} (cap : Nat) : SArray α 0 := ⟨Array.mkEmpty cap, rfl⟩
 
 end SArray
 
 namespace NatMemo
 
-protected def memoVec {α} (f : (n : Nat) → (∀ i, i < n → α) → α ) :
+protected def memoVec {α} (cap : Nat) (f : (n : Nat) → (∀ i, i < n → α) → α ) :
   (n : Nat) → SArray α n
-  | 0 => .empty
+  | 0 => .empty cap
   | n + 1 =>
-    let v := NatMemo.memoVec f n
+    let v := NatMemo.memoVec cap f n
     v.push (f n (fun i ih => v.get ⟨i, ih⟩))
 
 def memo {α : Type} (f : (n : Nat) → (∀ i, i < n → α) → α) (n : Nat) : α :=
-  (NatMemo.memoVec f (n + 1)).get ⟨n, Nat.le_refl _⟩
+  (NatMemo.memoVec (n + 1) f (n + 1)).get ⟨n, Nat.le_refl _⟩
 
 def fix {α} (f : (n : Nat) → (∀ i, i < n → α) → α) (n : Nat) : α :=
   f n (fun i _ => fix f i)
@@ -42,13 +42,13 @@ theorem memoVec_spec {α}
   (g : Nat → α)
   (f : (n : Nat) → (∀ i, i < n → α) → α)
   (h : ∀ n, f n (fun i _ => g i) = g n)
-  n : ∀ i hi, (NatMemo.memoVec f n).get ⟨i, hi⟩ = g i := by
+  n : ∀ c i hi, (NatMemo.memoVec c f n).get ⟨i, hi⟩ = g i := by
     induction n
     case zero => 
-      intro i hi
+      intro c i hi
       cases hi
     case succ n ih =>
-      intro i hi
+      intro c i hi
       rw [NatMemo.memoVec]
       apply Eq.trans (SArray.get_push _ _ _ _)
       split
@@ -65,7 +65,7 @@ theorem memo_spec {α}
   (g : Nat → α)
   (f : (n : Nat) → (∀ i, i < n → α) → α)
   (h : ∀ n, f n (fun i _ => g i) = g n) :
-  g = memo f := funext (fun _ => (memoVec_spec g f h _ _ _).symm)
+  g = memo f := funext (fun _ => (memoVec_spec g f h _ _ _ _).symm)
 
 theorem fix_eq_memo {α}
   (f : (n : Nat) → (∀ i, i < n → α) → α)
