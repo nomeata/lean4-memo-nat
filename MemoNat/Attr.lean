@@ -34,6 +34,7 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
   addDecl (.thmDecl { defn with
     name := eq_name
     type := mkAppN (.const `Eq [u]) #[defn.type, .const slow_name [], .const fast_name []]
+      -- FIXME is it necessarily the case that `slow_name` and `fast_name` have no universe params?
     value := mkAppN (.const `NatMemo.fix_eq_memo []) #[rt, f]
   })
 
