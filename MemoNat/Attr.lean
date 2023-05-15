@@ -31,7 +31,7 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
     value := mkAppN (mkConst `NatMemo.memo []) #[rt, f]
   })
 
-  addAndCompile (.thmDecl { defn with
+  addDecl (.thmDecl { defn with
     name := eq_name
     type := mkAppN (mkConst `Eq [u]) #[defn.type, mkConst slow_name, mkConst fast_name]
     value := mkAppN (mkConst `NatMemo.fix_eq_memo) #[rt, f]
