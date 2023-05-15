@@ -19,7 +19,7 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
     
   -- We assume the result motive to be non-dependent.
   -- If it's dependent there will be a type error later
-  let rt := mkApp drt (mkConst `Nat.zero)
+  let rt := .app drt (.const `Nat.zero [])
 
   let slow_name := defn.name
   let fast_name := slow_name.append (.mkSimple "fast")
@@ -28,13 +28,13 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
   addAndCompile (.defnDecl { defn with
     name := fast_name
     -- NB: This declaration has the same type as slow
-    value := mkAppN (mkConst `NatMemo.memo []) #[rt, f]
+    value := mkAppN (.const `NatMemo.memo []) #[rt, f]
   })
 
   addDecl (.thmDecl { defn with
     name := eq_name
-    type := mkAppN (mkConst `Eq [u]) #[defn.type, mkConst slow_name, mkConst fast_name]
-    value := mkAppN (mkConst `NatMemo.fix_eq_memo) #[rt, f]
+    type := mkAppN (.const `Eq [u]) #[defn.type, .const slow_name [], .const fast_name []]
+    value := mkAppN (.const `NatMemo.fix_eq_memo []) #[rt, f]
   })
 
   Lean.Compiler.CSimp.add eq_name AttributeKind.global
