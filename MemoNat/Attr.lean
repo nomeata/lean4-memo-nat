@@ -6,16 +6,16 @@ open Lean Meta Elab Tactic Term
 def memoAttrImpl (n : Name) : AttrM Unit := do
   let defn ← getConstInfoDefn n
 
-  let (u, f, drt) <- match defn.value with
-    | .app (.app (.app (.app (.app (.const `WellFounded.fix [u1, _u2]) dt) drt) _) _) f => do
-      match dt with
-      | .const `Nat _ => pure ()
-      | _ =>  throwError ("first argument to fix not Nat but" ++ toString dt)
-      pure (u1, f, drt)
+  let (u, f, drt) ← match defn.value with
+    | .app (.app (.app (.app (.app (.const `WellFounded.fix [u1, _u2]) dt) drt) _) _) f =>
+      if let .const `Nat _ := dt then
+        pure (u1, f, drt)
+      else
+        throwError "first argument to fix not Nat but {dt}"
     | .lam _ (.const `Nat _) ( .app (.app (.app (.const `Nat.brecOn [u]) drt) _) f) _ => do
       throwError "definitions using Nat.brecOn are not yet supported"
       pure (u, f, drt)
-    | _ => throwError ("definition right hand side not of expected form: " ++ toString defn.value)
+    | _ => throwError "definition right hand side not of expected form: {defn.value}"
     
   -- We assume the result motive to be non-dependent.
   -- If it's dependent there will be a type error later
