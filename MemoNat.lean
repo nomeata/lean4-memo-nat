@@ -32,37 +32,67 @@ protected abbrev Any.Sort : Any → Sort _
 protected abbrev Any.val : (a : Any) → a.Sort
 | mk x => x
 
-def DArray (n : Nat) (C : Nat → Type _) :=
-  {a : SArray Any n // ∀ (i : Fin n), (a.get i).Sort = C i }
+structure DArray.{u} (n : Nat) (C : Nat → Type u) : Type (u+1):=
+  arr : Array Any.{u+1}
+  size_eq : arr.size = n
+  types : ∀ (i : Fin arr.size), (arr.get i).Sort = C i
+/-
+def DArray.{u} (n : Nat) (C : Nat → Type u) : Type (u+1):=
+  { a : Array Any.{u+1} //
+    a.size = n ∧ ∀ (i : Fin a.size), (a.get i).Sort = C i}
+-/
 
 namespace DArray
 
+protected def empty {C} (cap : Nat) : DArray 0 C :=
+  ⟨ Array.mkEmpty cap, rfl, λ i => Fin.elim0 i⟩
+
 protected def push {n C} (a : DArray n C) (x : C n) : DArray (n + 1) C :=
-  ⟨a.1.push (Any.mk x), by 
+  ⟨ a.arr.push (Any.mk x),
+   by rw [Array.size_push, a.size_eq],
+   by 
+    cases a with | _ a size_eq types =>
+    cases size_eq
+    dsimp
     intro ⟨i, hi⟩
-    rewrite [SArray.get_push]
+    dsimp
+    rewrite [Array.get_push]
     split
-    case inl hi2 => apply a.2
+    case inl hi2 =>
+      apply types
     case inr hi2 =>
-      have : i = n := Nat.le_antisymm (Nat.le_of_lt_succ hi) (Nat.le_of_not_lt hi2)
+      rewrite [Array.size_push, <- Nat.succ_eq_add_one] at hi
+      have : i = Array.size a :=
+        Nat.le_antisymm (Nat.le_of_lt_succ hi) (Nat.le_of_not_lt hi2)
       cases this
       rfl
   ⟩
 
-protected def get {n C} (a : DArray n C) (i : Fin n) : C i :=
-  a.2 i ▸ (a.1.get i).val
+protected def get.{u} {n} {C : Nat → Type u} (a : DArray n C) (i : Fin n) : C i := by
+  rcases a with ⟨a, rfl, types⟩ 
+  have h := types i
+  revert h
+  generalize Array.get a i = x
+  cases x with | _ x =>
+  rintro rfl
+  exact x
 
 protected theorem get_push {n C} (a : DArray n C) (x : C n) (i : Nat) (hi : i < n + 1) :
     (a.push x).get ⟨i, hi⟩ =
       if h : i < n
       then a.get ⟨i, h⟩
       else (Nat.le_antisymm (Nat.le_of_lt_succ hi) (Nat.le_of_not_lt h) ▸ x : C i) := by
-  unfold DArray.push
-  unfold DArray.get
+  split 
+  case inl hi2 =>
+    rcases a with ⟨a, rfl, types⟩ 
+    unfold DArray.push
+    unfold DArray.get
+    dsimp
+    
+
   -- rw [ SArray.get_push a.1 (Any.mk x) i hi ]
   sorry
   
-protected def empty {C} (cap : Nat) : DArray 0 C := ⟨SArray.empty cap, λ i => Fin.elim0 i⟩
 
 end DArray
 
