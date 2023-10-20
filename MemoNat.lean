@@ -1,5 +1,6 @@
 -- This intentionally only uses std, not mathlib
 import Std.Data.Array.Lemmas
+import Std.Data.Fin.Basic
 import Std.Tactic.Congr
 
 set_option autoImplicit false
@@ -68,14 +69,10 @@ protected def push {n C} (a : DArray n C) (x : C n) : DArray (n + 1) C :=
       rfl
   ⟩
 
-protected def get.{u} {n} {C : Nat → Type u} (a : DArray n C) (i : Fin n) : C i := by
-  rcases a with ⟨a, rfl, types⟩ 
-  have h := types i
-  revert h
-  generalize Array.get a i = x
-  cases x with | _ x =>
-  rintro rfl
-  exact x
+protected def get.{u} {n} {C : Nat → Type u} (a : DArray n C) (i : Fin n) : C i :=
+  let i' := i.cast a.size_eq.symm
+  let x : Any := Array.get a.arr i'
+  a.types i' ▸ x.val
 
 protected theorem get_push {n C} (a : DArray n C) (x : C n) (i : Nat) (hi : i < n + 1) :
     (a.push x).get ⟨i, hi⟩ =

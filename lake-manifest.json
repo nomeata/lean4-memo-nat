@@ -1,9 +1,12 @@
-{"version": 4,
+{"version": 6,
  "packagesDir": "lake-packages",
  "packages":
  [{"git":
    {"url": "https://github.com/leanprover/std4",
     "subDir?": null,
-    "rev": "e008e0885404e68dcb519c9f5664c27b29882f0f",
-    "name": "std4",
-    "inputRev?": "main"}}]}
+    "rev": "e3f238c972c1b747e0b7605ff568017e6a5107c5",
+    "opts": {},
+    "name": "std",
+    "inputRev?": "main",
+    "inherited": false}}],
+ "name": "«memo-nat»"}
