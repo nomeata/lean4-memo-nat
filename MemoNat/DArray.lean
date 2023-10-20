@@ -15,9 +15,9 @@ protected abbrev Any.Sort : Any → Sort _
 protected abbrev Any.val : (a : Any) → a.Sort
 | mk x => x
 
-theorem eq_req_any_val.{u} (a : Any) (α : Sort u) (h : Any.Sort a = α) : h ▸ Any.val a = a.val :=
-  sorry
-
+theorem Any.congr.{u} {a₁ a₂ : Any}  (h : a₁ = a₂) {α : Sort u} {h₁ : a₁.Sort = α}
+    {h₂ : a₂.Sort = α} :
+    h₁ ▸ a₁.val = h₂ ▸ a₂.val := by induction h; rfl
 
 --  (_ : Any.Sort (Array.get (Array.push { arr := a, types := types }.arr (Any.mk x)) i) = C i.val) ▸
     -- Any.val (Array.push a (Any.mk x))
@@ -59,6 +59,7 @@ protected def get.{u} {C : Nat → Type u} (a : DArray C) (i : Fin a.size) : C i
   let x : Any := Array.get a.arr i
   a.types i ▸ x.val
 
+
 protected theorem get_push {C} (a : DArray C) (x : C a.size) (i : Fin (a.push x).size) :
     (a.push x).get i =
       if h : i < a.size
@@ -71,10 +72,22 @@ protected theorem get_push {C} (a : DArray C) (x : C a.size) (i : Fin (a.push x)
   split 
   case inl hi2 =>
     rcases a with ⟨a, types⟩ 
-    unfold DArray.push
-    unfold DArray.get
+    apply Any.congr
     dsimp
-    apply eq_of_heq
+    unfold DArray.push
+    rw [Array.get_push ]
+    dsimp
+    dsimp [DArray.size] at hi2
+    simp [hi2]
+  case inr hi2 =>
+    have : size a = i := Nat.le_antisymm
+      (Nat.le_of_not_lt hi2)
+      (Nat.le_of_lt_succ (by simpa [a.size_push x] using i.isLt))
+    rcases a with ⟨a, types⟩ 
+    dsimp [DArray.get, DArray.push]
+    sorry
+    
+
 
     
 
