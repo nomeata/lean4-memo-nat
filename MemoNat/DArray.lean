@@ -5,8 +5,9 @@ import Std.Tactic.Congr
 
 set_option autoImplicit false
 
+universe u
 
-inductive Any.{u} : Type u
+inductive Any : Type u
 | mk {α : Sort u} : α → Any
 
 protected abbrev Any.Sort : Any → Sort _
@@ -15,14 +16,14 @@ protected abbrev Any.Sort : Any → Sort _
 protected abbrev Any.val : (a : Any) → a.Sort
 | mk x => x
 
-theorem Any.congr.{u} {a₁ a₂ : Any}  (h : a₁ = a₂) {α : Sort u} {h₁ : a₁.Sort = α}
+theorem Any.congr {a₁ a₂ : Any}  (h : a₁ = a₂) {α : Sort u} {h₁ : a₁.Sort = α}
     {h₂ : a₂.Sort = α} :
     h₁ ▸ a₁.val = h₂ ▸ a₂.val := by induction h; rfl
 
-theorem Any.rw.{u} {a₁ a₂ : Any}  (h : a₁ = a₂) {α : Sort u} {h₁ : a₁.Sort = α} :
+theorem Any.rw {a₁ a₂ : Any}  (h : a₁ = a₂) {α : Sort u} {h₁ : a₁.Sort = α} :
     h₁ ▸ a₁.val = (h ▸ h₁) ▸ a₂.val := by induction h; rfl
 
-theorem Any.eq_rec_val.{u} {α : Sort u} {a : Any} (h : a.Sort = α) (x : α) (eq : a = Any.mk x) :
+theorem Any.eq_rec_val {α : Sort u} {a : Any} (h : a.Sort = α) (x : α) (eq : a = Any.mk x) :
     h ▸ a.val = x := by cases eq; rfl
 
 @[simp]
@@ -30,14 +31,14 @@ theorem Any.mk_eq_rec.{u₁,u₂} {β : Sort u₁} {x y : β} {P : β → Sort u
     Any.mk (h ▸ a) = Any.mk a := by cases h; rfl
 
 @[simp]
-theorem Any.mk_eq_rec'.{u}  {α β : Sort u} (h : α = β) (a : α) :
+theorem Any.mk_eq_rec'  {α β : Sort u} (h : α = β) (a : α) :
     Any.mk (h ▸ a) = Any.mk a := @Any.mk_eq_rec _ α β (fun x => x) h a
 
 --  (_ : Any.Sort (Array.get (Array.push { arr := a, types := types }.arr (Any.mk x)) i) = C i.val) ▸
     -- Any.val (Array.push a (Any.mk x))
 
-structure DArray.{u} (C : Nat → Type u) : Type (u+1):=
-  arr : Array Any.{u+1}
+structure DArray (C : Nat → Sort u) : Type u:=
+  arr : Array Any.{u}
   types : ∀ (i : Fin arr.size), (arr.get i).Sort = C i
 
 namespace DArray
@@ -69,7 +70,7 @@ def push {C} (a : DArray C) (x : C a.size) : DArray C :=
 theorem size_push {C} (a : DArray C) (x : C a.size) : (a.push x).size = a.size + 1 :=
   Array.size_push _ _
 
-def get.{u} {C : Nat → Type u} (a : DArray C) (i : Fin a.size) : C i :=
+def get {C : Nat → Sort u} (a : DArray C) (i : Fin a.size) : C i :=
   let x : Any := Array.get a.arr i
   a.types i ▸ x.val
 

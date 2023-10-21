@@ -1,6 +1,8 @@
 import MemoNat
 import MemoNat.Attr
 
+set_option profiler true
+
 /-
 A small demo. Here a slow implemntation of a recursive function.
 (The if inside is just to please the recursion checker, the condition is always true).
@@ -39,6 +41,8 @@ Also works very conveniently using an attribute.
 @[memo]
 def slow2 (n : Nat) : Nat :=
   1 + List.foldl (fun a i => a + (if _ : i<n then slow2 i else 0)) 0 (List.range n)
+
+-- #eval (slow2 20)
 
 /-
 One may have to use `termination_by` to make Lean elaborate to use `WellFounded.fix`.

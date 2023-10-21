@@ -7,11 +7,11 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
   let defn ← getConstInfoDefn n
 
   let (u, f, drt) <- match defn.value with
-    | .app (.app (.app (.app (.app (.const `WellFounded.fix [u1, _u2]) dt) drt) _) _) f => do
+    | .app (.app (.app (.app (.app (.const ``WellFounded.fix [_u, u]) dt) drt) _) _) f => do
       match dt with
       | .const `Nat _ => pure ()
       | _ =>  throwError ("first argument to fix not Nat but" ++ toString dt)
-      pure (u1, f, drt)
+      pure (u, f, drt)
     | .lam _ (.const `Nat _) ( .app (.app (.app (.const `Nat.brecOn [u]) drt) _) f) _ => do
       throwError "definitions using Nat.brecOn are not yet supported"
       pure (u, f, drt)
@@ -28,13 +28,13 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
   addAndCompile (.defnDecl { defn with
     name := fast_name
     -- NB: This declaration has the same type as slow
-    value := mkAppN (mkConst `NatMemo.memo []) #[rt, f]
+    value := mkAppN (mkConst `NatMemo.memo [u]) #[rt, f]
   })
 
   addAndCompile (.thmDecl { defn with
     name := eq_name
     type := mkAppN (mkConst `Eq [u]) #[defn.type, mkConst slow_name, mkConst fast_name]
-    value := mkAppN (mkConst `NatMemo.fix_eq_memo) #[rt, f]
+    value := mkAppN (mkConst `NatMemo.fix_eq_memo [u]) #[rt, f]
   })
 
   Lean.Compiler.CSimp.add eq_name AttributeKind.global

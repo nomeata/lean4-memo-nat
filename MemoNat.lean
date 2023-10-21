@@ -6,6 +6,8 @@ import MemoNat.DArray
 
 set_option autoImplicit false
 
+universe u
+
 /-- Arrays of a given size, H'T Kyle Miller -/
 def SArray (α : Type _) (n : Nat) := {a : Array α // a.size = n}
 
@@ -25,8 +27,7 @@ protected def empty {α} (cap : Nat) : SArray α 0 := ⟨Array.mkEmpty cap, rfl�
 
 end SArray
 
-/-- Dependent arrays of a given size, H'T Kyle Miller -/
-def DSArray (n : Nat) (C : Nat → Type _)  := {a : DArray C // a.size = n}
+def DSArray (n : Nat) (C : Nat → Sort u) : Type u := {a : DArray C // a.size = n}
 
 namespace DSArray
 
@@ -65,28 +66,29 @@ end DSArray
 
 namespace NatMemo
 
-protected def memoVec {C} (cap : Nat) (f : (n : Nat) → (∀ i, i < n → C i) → C n) :
-  (n : Nat) → DSArray n C
+protected def dmemoVec {C : Nat → Sort u} (cap : Nat)
+    (f : (n : Nat) → (∀ i, i < n → C i) → C n) :
+    (n : Nat) → DSArray n C
   | 0 => .empty cap
   | n + 1 =>
-    let v := NatMemo.memoVec cap f n
+    let v := NatMemo.dmemoVec cap f n
     v.push (f n (fun i ih => v.get ⟨i, ih⟩))
 
-def memo {C : Nat → Sort _} (f : (n : Nat) → (∀ i, i < n → C i) → C n) (n : Nat) : C n :=
-  (NatMemo.memoVec (n + 1) f (n + 1)).get ⟨n, Nat.le_refl _⟩
+def dmemo {C : Nat → Sort u} (f : (n : Nat) → (∀ i, i < n → C i) → C n) (n : Nat) : C n :=
+  (NatMemo.dmemoVec (n + 1) f (n + 1)).get ⟨n, Nat.le_refl _⟩
 
-theorem memoVec_spec {C : Nat → Sort _}
+theorem dmemoVec_spec {C : Nat → Sort u}
   (g : ∀ n, C n)
   (f : (n : Nat) → (∀ i, i < n → C i) → C n)
   (h : ∀ n, f n (fun i _ => g i) = g n)
-  n : ∀ c i hi, (NatMemo.memoVec c f n).get ⟨i, hi⟩ = g i := by
+  n : ∀ c i hi, (NatMemo.dmemoVec c f n).get ⟨i, hi⟩ = g i := by
     induction n
     case zero => 
       intro c i hi
       cases hi
     case succ n ih =>
       intro c i hi
-      rw [NatMemo.memoVec]
+      rw [NatMemo.dmemoVec]
       apply Eq.trans (DSArray.get_push _ _ _ _)
       split
       case inl hn =>
@@ -99,18 +101,36 @@ theorem memoVec_spec {C : Nat → Sort _}
         congr with i hi'
         apply ih
 
-theorem memo_spec {C : Nat → Sort _}
-  (g : ∀ n, C n)
-  (f : (n : Nat) → (∀ i, i < n → C i) → C n)
-  (h : ∀ n, f n (fun i _ => g i) = g n) :
-  g = memo f := funext (fun _ => (memoVec_spec g f h _ _ _ _).symm)
+theorem dmemo_spec {C : Nat → Sort u}
+    (g : ∀ n, C n)
+    (f : (n : Nat) → (∀ i, i < n → C i) → C n)
+    (h : ∀ n, f n (fun i _ => g i) = g n) :
+    g = dmemo f :=
+  funext (fun _ => (dmemoVec_spec g f h _ _ _ _).symm)
 
-theorem fix_eq_memo {α}
+
+theorem fix_eq_dmemo {α : Sort u}
   (f : (n : Nat) → (∀ i, i < n → α) → α)
-  : WellFounded.fix (invImage (fun a => sizeOf a) instWellFoundedRelation).2 f = memo f := by
-    apply memo_spec
+  : WellFounded.fix (invImage (fun a => sizeOf a) instWellFoundedRelation).2 f = dmemo f := by
+    apply dmemo_spec
     intro n
     apply (WellFounded.fix_eq _ _ _).symm
+
+def memo {α : Sort u} (f : (n : Nat) → (∀ i, i < n → α) → α) (n : Nat) : α :=
+  dmemo f n
+
+theorem memo_spec {α : Sort u}
+    (g : Nat → α)
+    (f : (n : Nat) → (∀ i, i < n → α) → α)
+    (h : ∀ n, f n (fun i _ => g i) = g n) :
+    g = dmemo f :=
+  dmemo_spec g f h
+
+
+theorem fix_eq_memo {α} (f : (n : Nat) → (∀ i, i < n → α) → α) :
+    WellFounded.fix (invImage (fun a => sizeOf a) instWellFoundedRelation).2 f = memo f :=
+  fix_eq_dmemo f
+
 
 /-
 theorem Brec_eq_memo {α}
