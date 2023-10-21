@@ -2,6 +2,7 @@
 import Std.Data.Array.Lemmas
 import Std.Data.Fin.Basic
 import Std.Tactic.Congr
+import MemoNat.DArray
 
 set_option autoImplicit false
 
@@ -24,79 +25,48 @@ protected def empty {α} (cap : Nat) : SArray α 0 := ⟨Array.mkEmpty cap, rfl�
 
 end SArray
 
-inductive Any.{u} : Type u
-| mk {α : Sort u} : α → Any
+/-- Dependent arrays of a given size, H'T Kyle Miller -/
+def DSArray (n : Nat) (C : Nat → Type _)  := {a : DArray C // a.size = n}
 
-protected abbrev Any.Sort : Any → Sort _
-| @mk α _ => α
+namespace DSArray
 
-protected abbrev Any.val : (a : Any) → a.Sort
-| mk x => x
+protected def empty {C} (cap : Nat) : DSArray 0 C := ⟨DArray.mkEmpty cap, rfl⟩
 
-structure DArray.{u} (n : Nat) (C : Nat → Type u) : Type (u+1):=
-  arr : Array Any.{u+1}
-  size_eq : arr.size = n
-  types : ∀ (i : Fin arr.size), (arr.get i).Sort = C i
-/-
-def DArray.{u} (n : Nat) (C : Nat → Type u) : Type (u+1):=
-  { a : Array Any.{u+1} //
-    a.size = n ∧ ∀ (i : Fin a.size), (a.get i).Sort = C i}
--/
+protected def push {C n} (a : DSArray n C) (x : C n) : DSArray (n + 1) C :=
+  ⟨a.1.push (a.2.symm ▸ x), by rw [DArray.size_push, a.2]⟩
 
-namespace DArray
+protected def get {C n} (a : DSArray n C) (i : Fin n) : C i :=
+  a.1.get ⟨i, a.2.symm ▸ i.2⟩
 
-protected def empty {C} (cap : Nat) : DArray 0 C :=
-  ⟨ Array.mkEmpty cap, rfl, λ i => Fin.elim0 i⟩
-
-protected def push {n C} (a : DArray n C) (x : C n) : DArray (n + 1) C :=
-  ⟨ a.arr.push (Any.mk x),
-   by rw [Array.size_push, a.size_eq],
-   by 
-    cases a with | _ a size_eq types =>
-    cases size_eq
-    dsimp
-    intro ⟨i, hi⟩
-    dsimp
-    rewrite [Array.get_push]
-    split
-    case inl hi2 =>
-      apply types
-    case inr hi2 =>
-      rewrite [Array.size_push, <- Nat.succ_eq_add_one] at hi
-      have : i = Array.size a :=
-        Nat.le_antisymm (Nat.le_of_lt_succ hi) (Nat.le_of_not_lt hi2)
-      cases this
+protected theorem get_push {C n} (a : DSArray n C) (i : Nat) (hi : i < n + 1) (x : C n) :
+    (a.push x).get (⟨i, hi⟩) =
+      if h : i < n then
+        a.get ⟨i, h⟩
+      else
+        have : n = i := Nat.le_antisymm
+          (Nat.le_of_not_lt h)
+          (Nat.le_of_lt_succ hi)
+        this ▸ x := by
+  simp only [DSArray.get, DSArray.push, DArray.get_push, a.2]
+  split
+  · rfl
+  case inr h =>
+    have : n = i := Nat.le_antisymm
+          (Nat.le_of_not_lt h)
+          (Nat.le_of_lt_succ hi)
+    cases this
+    cases a
+    case _ a ha =>
+      dsimp
+      cases ha
       rfl
-  ⟩
 
-protected def get.{u} {n} {C : Nat → Type u} (a : DArray n C) (i : Fin n) : C i :=
-  let i' := i.cast a.size_eq.symm
-  let x : Any := Array.get a.arr i'
-  a.types i' ▸ x.val
-
-protected theorem get_push {n C} (a : DArray n C) (x : C n) (i : Nat) (hi : i < n + 1) :
-    (a.push x).get ⟨i, hi⟩ =
-      if h : i < n
-      then a.get ⟨i, h⟩
-      else (Nat.le_antisymm (Nat.le_of_lt_succ hi) (Nat.le_of_not_lt h) ▸ x : C i) := by
-  split 
-  case inl hi2 =>
-    rcases a with ⟨a, rfl, types⟩ 
-    unfold DArray.push
-    unfold DArray.get
-    dsimp
-    
-
-  -- rw [ SArray.get_push a.1 (Any.mk x) i hi ]
-  sorry
-  
-
-end DArray
+end DSArray
 
 namespace NatMemo
 
 protected def memoVec {C} (cap : Nat) (f : (n : Nat) → (∀ i, i < n → C i) → C n) :
-  (n : Nat) → DArray n C
+  (n : Nat) → DSArray n C
   | 0 => .empty cap
   | n + 1 =>
     let v := NatMemo.memoVec cap f n
@@ -117,7 +87,7 @@ theorem memoVec_spec {C : Nat → Sort _}
     case succ n ih =>
       intro c i hi
       rw [NatMemo.memoVec]
-      apply Eq.trans (DArray.get_push _ _ _ _)
+      apply Eq.trans (DSArray.get_push _ _ _ _)
       split
       case inl hn =>
         apply ih
