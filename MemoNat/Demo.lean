@@ -1,3 +1,5 @@
+import Std.Data.Fin.Lemmas
+
 import MemoNat
 import MemoNat.Attr
 
@@ -55,3 +57,21 @@ def fib : Nat → Nat
 termination_by fib n => n
 
 -- #eval fib 100
+
+
+/- Dependent recursion also works -/
+
+def pad_left {α n} (x : α) (a : SArray α n) : Fin (n + 1) → α :=
+  Fin.cases x (a.get)
+
+def pad_right {α n} (a : SArray α n) (x : α) : Fin (n + 1) → α :=
+  Fin.lastCases x (a.get)
+
+@[memo]
+def pascal : (i : Nat) → SArray Nat i
+  | 0 => SArray.empty
+  | n + 1 => SArray.ofFn (n + 1) fun i =>
+      pad_left 1 (pascal n) i + pad_right (pascal n) 1 i
+termination_by pascal n => n
+
+-- #eval pascal 9

@@ -17,10 +17,6 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
       pure (u, f, drt)
     | _ => throwError ("definition right hand side not of expected form: " ++ toString defn.value)
     
-  -- We assume the result motive to be non-dependent.
-  -- If it's dependent there will be a type error later
-  let rt := mkApp drt (mkConst `Nat.zero)
-
   let slow_name := defn.name
   let fast_name := slow_name.append (.mkSimple "fast")
   let eq_name   := slow_name.append (.mkSimple "eq_fast")
@@ -28,13 +24,13 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
   addAndCompile (.defnDecl { defn with
     name := fast_name
     -- NB: This declaration has the same type as slow
-    value := mkAppN (mkConst `NatMemo.memo [u]) #[rt, f]
+    value := mkAppN (mkConst `NatMemo.dmemo [u]) #[drt, f]
   })
 
   addAndCompile (.thmDecl { defn with
     name := eq_name
     type := mkAppN (mkConst `Eq [u]) #[defn.type, mkConst slow_name, mkConst fast_name]
-    value := mkAppN (mkConst `NatMemo.fix_eq_memo [u]) #[rt, f]
+    value := mkAppN (mkConst `NatMemo.fix_eq_dmemo [u]) #[drt, f]
   })
 
   Lean.Compiler.CSimp.add eq_name AttributeKind.global
