@@ -1,5 +1,3 @@
-import Std.Data.Fin.Lemmas
-
 import MemoNat
 import MemoNat.Attr
 
@@ -46,18 +44,24 @@ def slow2 (n : Nat) : Nat :=
 
 -- #eval (slow2 20)
 
-/-
-One may have to use `termination_by` to make Lean elaborate to use `WellFounded.fix`.
-(else it uses `Nat.brecOn`, and that is not yet suported.)
--/
+/- Structurally recursive funcitons are compiled using `Nat.brecOn`, which our attribute
+supports (although probably less efficiently) -/
 @[memo]
 def fib : Nat → Nat
   | 0 | 1 => 1
   | n + 2 => fib n + fib (n + 1)
-termination_by fib n => n
 
--- #eval fib 100
+/-
+One can use `termination_by` to make Lean elaborate to use `WellFounded.fix` instead,
+which is better suited for memoization:
+-/
+@[memo]
+def fib2 : Nat → Nat
+  | 0 | 1 => 1
+  | n + 2 => fib2 n + fib2 (n + 1)
+termination_by fib2 n => n
 
+-- #eval fib2 100
 
 /- Dependent recursion also works -/
 
@@ -72,6 +76,5 @@ def pascal : (i : Nat) → SArray Nat i
   | 0 => SArray.empty
   | n + 1 => SArray.ofFn (n + 1) fun i =>
       pad_left 1 (pascal n) i + pad_right (pascal n) 1 i
-termination_by pascal n => n
 
 -- #eval pascal 9
