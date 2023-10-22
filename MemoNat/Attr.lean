@@ -19,8 +19,8 @@ def memoAttrImpl (n : Name) : AttrM Unit := do
     | _ => throwError ("definition right hand side not of expected form: " ++ toString defn.value)
     
   let slow_name := defn.name
-  let fast_name := slow_name.append (.mkSimple "fast")
-  let eq_name   := slow_name.append (.mkSimple "eq_fast")
+  let fast_name := slow_name ++ `fast
+  let eq_name   := slow_name ++ `eq_fast
 
   addAndCompile (.defnDecl { defn with
     name := fast_name
