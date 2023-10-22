@@ -96,8 +96,7 @@ theorem ext {C} (a b : DArray C)
     intro i hi₁ hi₂
     specialize h₂ i hi₁ hi₂
     unfold DArray.get at h₂
-    dsimp at h₂
-    rw [Any.eq_rec_val_iff] at h₂
+    simp at h₂
     assumption
 
 theorem _root_.List.length_dropLast {α} (xs : List α) :
