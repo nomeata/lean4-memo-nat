@@ -124,6 +124,7 @@ protected theorem get_ofFn {C : Nat → Sort _} (n : Nat) (f : (i : Fin n) → C
   simp only [Array.getElem_ofFn, Any.mk.injEq, heq_eq_eq, true_and]
   rfl
 
+@[ext]
 theorem ext {C} (a b : DArray C)
     (h₁ : a.size = b.size)
     (h₂ : (i : Nat) → (hi₁ : i < a.size) → (hi₂ : i < b.size) → a.get ⟨i, hi₁⟩ = b.get ⟨i, hi₂⟩)
@@ -156,19 +157,15 @@ theorem _root_.List.get_dropLast {α} (xs : List α) (i : Fin xs.dropLast.length
     case nil => rfl
     case cons x xs =>
       cases xs
-      · simp at hi
-      · simp
+      case nil => simp at hi
+      case cons => rfl
   case succ i IH =>
     cases xs
     case nil => rfl
     case cons x xs =>
       cases xs
-      case nil =>
-        simp at hi
-        exfalso
-        apply Nat.not_lt_zero _ hi
-      case cons y ys =>
-        apply IH
+      case nil => apply False.elim (Nat.not_lt_zero _ hi)
+      case cons y ys => apply IH
 
 theorem _root_.Array.get_pop {α} (a : Array α) (i : Fin a.pop.size) :
     a.pop.get i = a.get (i.castLE (a.size_pop ▸ Nat.sub_le _ _ )) :=
