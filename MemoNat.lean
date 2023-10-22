@@ -75,49 +75,6 @@ protected def ofFn {C} (n : Nat) (f : (i : Fin n) → C i) : DSArray n C :=
 protected theorem get_ofFn  {C : Nat → Sort _} (n : Nat) (f : (i : Fin n) → C i)
     (i : Fin n) : (DSArray.ofFn n f).get i = f i := DArray.get_ofFn _ _ _
 
-theorem Array.get_pop {α} (a : Array α) (i : Fin a.pop.size) :
-  a.pop.get i = a.get (i.castLE (a.size_pop ▸ Nat.sub_le _ _ )) := by
-    cases i with | _ i hi =>
-    cases a with | _ xs =>
-    unfold Array.pop Array.size Array.get at *
-    dsimp
-    dsimp at hi
-    induction i generalizing xs
-    case zero =>
-      cases xs
-      case nil => rfl
-      case cons x xs =>
-        cases xs
-        · simp at hi
-        · simp
-    case succ i IH =>
-      cases xs
-      case nil => rfl
-      case cons x xs =>
-        cases xs
-        case nil =>
-          simp at hi
-          exfalso
-          apply Nat.not_lt_zero _ hi
-        case cons y ys =>
-          apply IH
-
-def _root_.DArray.pop {C} (a : DArray C) : DArray C :=
-  ⟨a.arr.pop, by
-    intro i
-    cases a with | _ a ha =>
-    rw [Array.get_pop]
-    apply ha ⟩
-
-theorem _root_.DArray.size_pop {C} (a : DArray C) :
-  a.pop.size = a.size - 1 := Array.size_pop _
-
-@[simp]
-theorem _root_.DArray.get_pop {C} (a : DArray C) (i : Fin a.pop.size):
-  a.pop.get i = a.get (i.castLE (a.size_pop ▸ Nat.sub_le _ _)) := by
-    unfold DArray.pop DArray.get
-    apply Any.eq_rec_val
-    simp only [Fin.coe_castLE, Any.mk_eq_rec', Array.get_pop]
 
 def pop {C n} (a : DSArray (n + 1) C) : DSArray n C :=
   ⟨a.val.pop, by rw [DArray.size_pop, a.2]; rfl⟩

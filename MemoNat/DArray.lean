@@ -1,6 +1,7 @@
 -- This intentionally only uses std, not mathlib
 import Std.Data.Array.Lemmas
 import Std.Data.Fin.Basic
+import Std.Data.Fin.Lemmas
 import Std.Tactic.Congr
 
 set_option autoImplicit false
@@ -139,5 +140,56 @@ theorem ext {C} (a b : DArray C)
     dsimp at h₂
     rw [Any.eq_rec_val_iff] at h₂
     assumption
+
+theorem _root_.List.length_dropLast {α} (xs : List α) :
+    xs.dropLast.length = xs.length - 1 := by
+  match xs with
+  | [] => rfl
+  | x::xs => simp [Nat.succ_sub_succ_eq_sub]
+
+theorem _root_.List.get_dropLast {α} (xs : List α) (i : Fin xs.dropLast.length) :
+  xs.dropLast.get i = xs.get (i.castLE (xs.length_dropLast ▸ Nat.sub_le _ _ )) := by
+  cases i with | _ i hi =>
+  induction i generalizing xs
+  case zero =>
+    cases xs
+    case nil => rfl
+    case cons x xs =>
+      cases xs
+      · simp at hi
+      · simp
+  case succ i IH =>
+    cases xs
+    case nil => rfl
+    case cons x xs =>
+      cases xs
+      case nil =>
+        simp at hi
+        exfalso
+        apply Nat.not_lt_zero _ hi
+      case cons y ys =>
+        apply IH
+
+theorem _root_.Array.get_pop {α} (a : Array α) (i : Fin a.pop.size) :
+    a.pop.get i = a.get (i.castLE (a.size_pop ▸ Nat.sub_le _ _ )) :=
+  List.get_dropLast _ _
+
+def pop {C} (a : DArray C) : DArray C :=
+  ⟨a.arr.pop, by
+    intro i
+    cases a with | _ a ha =>
+    rw [Array.get_pop]
+    apply ha ⟩
+
+theorem size_pop {C} (a : DArray C) :
+  a.pop.size = a.size - 1 := Array.size_pop _
+
+@[simp]
+theorem get_pop {C} (a : DArray C) (i : Fin a.pop.size):
+  a.pop.get i = a.get (i.castLE (a.size_pop ▸ Nat.sub_le _ _)) := by
+    unfold DArray.pop DArray.get
+    apply Any.eq_rec_val
+    simp only [Fin.coe_castLE, Any.mk_eq_rec', Array.get_pop]
+
 
 end DArray
