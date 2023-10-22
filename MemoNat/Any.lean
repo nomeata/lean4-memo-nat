@@ -11,6 +11,14 @@ protected abbrev Any.Sort : Any → Sort _
 protected abbrev Any.val : (a : Any) → a.Sort
 | mk x => x
 
+--- Homogeneous version of `Any.mk.inj`
+theorem Any.mk_inj {α} (x y : α) (h : Any.mk x = Any.mk y) : x = y :=
+  eq_of_heq (@Any.mk.inj α x α y h).2
+
+@[simp]
+theorem Any.mk_val (a : Any) : Any.mk (Any.val a) = a :=
+  rfl
+
 @[simp]
 theorem Any.mk_eq_rec.{u₁,u₂} {β : Sort u₁} {x y : β} {P : β → Sort u₂} (h : x = y) (a : P x):
     Any.mk (h ▸ a) = Any.mk a := by cases h; rfl

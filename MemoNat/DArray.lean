@@ -55,15 +55,17 @@ theorem get_push {C} (a : DArray C) (x : C a.size) (i : Fin (a.push x).size) :
           (Nat.le_of_not_lt h)
           (Nat.le_of_lt_succ (by simpa [a.size_push x] using i.isLt))
         (this ▸ x : C i) := by
-  apply (Any.rw (Array.get_push a.arr (Any.mk x) i.val i.isLt)).trans
-  apply Any.eq_rec_val
+  apply Any.mk_inj
+  unfold DArray.get
+  simp only [Any.mk_eq_rec', Any.mk_val]
+  apply (Array.get_push a.arr (Any.mk x) i.val i.isLt).trans
   unfold DArray.size
   split
   case inl _ =>
-    simp only [get, Array.get, Any.mk_eq_rec']
+    simp only [Any.mk_eq_rec']
     rfl
   case inr hi2 =>
-    simp only [get, Array.get, Any.mk_eq_rec', DArray.size, Any.mk_eq_rec ]
+    simp only [Any.mk_eq_rec]
  
 protected def ofFn {C} (n : Nat) (f : (i : Fin n) → C i) : DArray C :=
   ⟨ .ofFn fun i => Any.mk (f i),
@@ -96,7 +98,7 @@ theorem ext {C} (a b : DArray C)
     intro i hi₁ hi₂
     specialize h₂ i hi₁ hi₂
     unfold DArray.get at h₂
-    simp at h₂
+    simp only [Array.get_eq_getElem, Any.eq_rec_val_iff, Any.mk_eq_rec'] at h₂ 
     assumption
 
 theorem _root_.List.length_dropLast {α} (xs : List α) :
