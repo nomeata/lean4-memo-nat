@@ -1,7 +1,8 @@
 import MemoNat
 import MemoNat.Attr
+import MemoNat.SArray
 
-set_option profiler true
+-- set_option profiler true
 
 /-
 A small demo. Here a slow implemntation of a recursive function.
