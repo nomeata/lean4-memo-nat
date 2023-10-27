@@ -11,22 +11,23 @@ universe u
 
 structure DArray (C : Nat → Sort u) : Type u:=
   arr : Array Any.{u}
-  types : ∀ (i : Fin arr.size), (arr.get i).Sort = C i
+  types : ∀ i (h : i < arr.size), (arr[i]).Sort = C i
+
+attribute [simp] DArray.types
 
 namespace DArray
 
 def mkEmpty {C} (cap : Nat) : DArray C :=
-  ⟨ Array.mkEmpty cap, λ i => Fin.elim0 i⟩
+  ⟨ Array.mkEmpty cap, λ _ hi => absurd hi (Nat.not_lt_zero _) ⟩
 
 def size {C} (a : DArray C) := a.arr.size
 
 def push {C} (a : DArray C) (x : C a.size) : DArray C :=
   ⟨ a.arr.push (Any.mk x),
-   by 
+   by
     cases a with | _ a types =>
     dsimp
-    intro ⟨i, hi⟩
-    dsimp
+    intro i hi
     rewrite [Array.get_push]
     split
     case inl hi2 =>
@@ -44,7 +45,7 @@ theorem size_push {C} (a : DArray C) (x : C a.size) : (a.push x).size = a.size +
 
 def get {C : Nat → Sort u} (a : DArray C) (i : Fin a.size) : C i :=
   let x : Any := Array.get a.arr i
-  a.types i ▸ x.val
+  a.types i.1 i.2 ▸ x.val
 
 theorem get_push {C} (a : DArray C) (x : C a.size) (i : Fin (a.push x).size) :
     (a.push x).get i =
@@ -66,10 +67,9 @@ theorem get_push {C} (a : DArray C) (x : C a.size) (i : Fin (a.push x).size) :
     rfl
   case inr hi2 =>
     simp only [Any.mk_eq_rec]
- 
+
 protected def ofFn {C} (n : Nat) (f : (i : Fin n) → C i) : DArray C :=
-  ⟨ .ofFn fun i => Any.mk (f i),
-    by intro i; rw [Array.get_eq_getElem, Array.getElem_ofFn] ⟩
+  ⟨ .ofFn fun i => Any.mk (f i), by simp ⟩
 
 protected theorem size_ofFn  {C : Nat → Sort _} (n : Nat) (f : (i : Fin n) → C i) :
   (DArray.ofFn n f).size = n := by
@@ -98,7 +98,7 @@ theorem ext {C} (a b : DArray C)
     intro i hi₁ hi₂
     specialize h₂ i hi₁ hi₂
     unfold DArray.get at h₂
-    simp only [Array.get_eq_getElem, Any.eq_rec_val_iff, Any.mk_eq_rec'] at h₂ 
+    simp only [Array.get_eq_getElem, Any.eq_rec_val_iff, Any.mk_eq_rec'] at h₂
     assumption
 
 theorem _root_.List.length_dropLast {α} (xs : List α) :
@@ -126,16 +126,12 @@ theorem _root_.List.get_dropLast {α} (xs : List α) (i : Fin xs.dropLast.length
       case nil => apply False.elim (Nat.not_lt_zero _ hi)
       case cons y ys => apply IH
 
-theorem _root_.Array.get_pop {α} (a : Array α) (i : Fin a.pop.size) :
-    a.pop.get i = a.get (i.castLE (a.size_pop ▸ Nat.sub_le _ _ )) :=
+@[simp] theorem _root_.Array.getElem_pop {α} (a : Array α) (i : Nat) (hi : i < a.pop.size) :
+    a.pop[i] = a[i]'(Nat.lt_of_lt_of_le (a.size_pop ▸ hi) (Nat.sub_le _ _)) :=
   List.get_dropLast _ _
 
 def pop {C} (a : DArray C) : DArray C :=
-  ⟨a.arr.pop, by
-    intro i
-    cases a with | _ a ha =>
-    rw [Array.get_pop]
-    apply ha ⟩
+  ⟨a.arr.pop, by simp ⟩
 
 theorem size_pop {C} (a : DArray C) :
   a.pop.size = a.size - 1 := Array.size_pop _
@@ -145,7 +141,7 @@ theorem get_pop {C} (a : DArray C) (i : Fin a.pop.size):
   a.pop.get i = a.get (i.castLE (a.size_pop ▸ Nat.sub_le _ _)) := by
     unfold DArray.pop DArray.get
     apply Any.eq_rec_val
-    simp only [Fin.coe_castLE, Any.mk_eq_rec', Array.get_pop]
-
+    simp only [Array.get_eq_getElem, Array.getElem_pop, Fin.coe_castLE,
+      Any.mk_eq_rec', Any.mk_val]
 
 end DArray
